@@ -20,6 +20,15 @@ def chat(data):
 def test():
     socketio.send("test")
 
+@socketio.on('connect')
+def connect():
+    print("Client connected")
+
+@socketio.on("disconnect")
+def disconnect():
+    print("Client disconnected")
+
+
 if __name__ == "__main__":
     socketio.run(app=app, host='0.0.0.0', port=81)
 
