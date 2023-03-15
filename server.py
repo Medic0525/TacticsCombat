@@ -7,10 +7,16 @@ app.config.from_object(configs)
 
 socketio = SocketIO(app)
 
+
+#============================
 @app.route('/')
 def index():
     ctx = render_template("index.html")
     return ctx
+
+@app.route('/data')
+def get_data():
+    return data
 
 @socketio.on('send')
 def chat(data):
@@ -27,6 +33,7 @@ def connect():
 @socketio.on("disconnect")
 def disconnect():
     print("Client disconnected")
+#============================
 
 lastKey= {
     "vertical": "",
@@ -42,7 +49,7 @@ def spritemove(keys, **somethingthatshouldnotexist):
     #horizonal ------
     if (keys["a"]):
         toEmit[0] = 1
-        print("key a") ###debug
+        #print("key a") ###debug
         lastKey["horizonal"] = "a"
     elif (keys["d"]):
         toEmit[0] = -1
@@ -63,7 +70,35 @@ def spritemove(keys, **somethingthatshouldnotexist):
     spriteposition[0] += toEmit[0]
     spriteposition[1] += toEmit[1]
     #emit session
-    socketio.emit("spritemove", spriteposition)
+    socketio.emit("sprite.pos", spriteposition)
+
+grids = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+] #12*12
+relative_pos = [0,0]
+
+data = {
+    "sprite.pos": spriteposition,
+    "space.grids": grids,
+    "space.relativePos": relative_pos
+}
+
+socketio.emit("sprite.pos", spriteposition)
+socketio.emit("space.grids", grids)
+socketio.emit("space.relativePos", relative_pos)
+
 
 
 
