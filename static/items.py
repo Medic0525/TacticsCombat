@@ -19,8 +19,3 @@ class user:
         self.hashedpassword = hash(password)
         self.username = F"{accountname}#{nameid}"
 
-def main():
-    print("item testing")
-
-if __name__ == "__main__":
-    main()
