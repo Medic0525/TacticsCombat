@@ -12,7 +12,6 @@ $.get(url+"/data", function(datax){
     Space.relativePos = data["space.relativePos"]
     */ 
 });
-console.log('here 13');
 
 const Sprite = {
     pos: data["sprite.pos"],
