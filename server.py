@@ -1,22 +1,38 @@
+# coding: utf-8
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 import configs
+import json
 
 app = Flask(__name__)
 app.config.from_object(configs)
-
 socketio = SocketIO(app)
 
+with open("static/staticdata.json") as f:
+    data = json.load(f)
+
+last_keys = data["last_keys"] 
+spriteposition = data["spriteposition"] #[x,y]
+grids = data["grids"] #12*12, from [1,1] to [10,10]
+relative_pos = [0,0]
 
 #============================
+#region Routes
 @app.route('/')
 def index():
-    ctx = render_template("index.html")
-    return ctx
+    return render_template("index.html")
+
+@app.route('/begin/')
+def begin():
+    return render_template("a.html")
 
 @app.route('/data')
 def get_data():
-    return data
+    return {
+        "sprite.pos": spriteposition,
+        "space.grids": grids,
+        "space.relativePos": relative_pos
+    }
 
 @socketio.on('send')
 def chat(data):
@@ -33,14 +49,8 @@ def connect():
 @socketio.on("disconnect")
 def disconnect():
     print("Client disconnected")
+#endregion
 #============================
-
-lastKey= {
-    "vertical": "",
-    "horizonal": ""
-}
-
-spriteposition = [400, 300]
 
 @socketio.on("key")
 def spritemove(keys, **somethingthatshouldnotexist):
@@ -50,20 +60,20 @@ def spritemove(keys, **somethingthatshouldnotexist):
     if (keys["a"]):
         toEmit[0] = 1
         #print("key a") ###debug
-        lastKey["horizonal"] = "a"
+        last_keys["horizonal"] = "a"
     elif (keys["d"]):
         toEmit[0] = -1
-        lastKey["horizonal"] = "d"
+        last_keys["horizonal"] = "d"
     else:
         toEmit[0] = 0
 
     #vertical  |||||||
     if (keys["w"]):
         toEmit[1] = 1
-        lastKey["vertical"] = "w"
+        last_keys["vertical"] = "w"
     elif (keys["s"]):
         toEmit[1] = -1
-        lastKey["vertical"] = "s"
+        last_keys["vertical"] = "s"
     else:
         toEmit[1] = 0
 
@@ -71,37 +81,6 @@ def spritemove(keys, **somethingthatshouldnotexist):
     spriteposition[1] += toEmit[1]
     #emit session
     socketio.emit("sprite.pos", spriteposition)
-
-grids = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-] #12*12
-relative_pos = [0,0]
-
-data = {
-    "sprite.pos": spriteposition,
-    "space.grids": grids,
-    "space.relativePos": relative_pos
-}
-
-socketio.emit("sprite.pos", spriteposition)
-socketio.emit("space.grids", grids)
-socketio.emit("space.relativePos", relative_pos)
-
-
-
-
 
 if __name__ == "__main__":
     socketio.run(app=app, host='0.0.0.0', port=81)
