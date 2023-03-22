@@ -1,19 +1,21 @@
 const url = "http://localhost:81/";
 
-let datax;
-$.get(url+"/data", function(data){
-    console.log("data:",data)
-    datax = data;
+let data;
+
+$.ajaxSetup({async: false});
+$.get(url+"/data", function(datax){
+    console.log("data:",datax)
+    data = datax;
     /*
     Sprite.pos = data["sprite.pos"];
     Space.grids = data["space.grids"];
     Space.relativePos = data["space.relativePos"]
-    */
-    
+    */ 
 });
+console.log('here 13');
 
 const Sprite = {
-    pos: [0,0],
+    pos: data["sprite.pos"],
     draw: function (ctx) {
         ctx.fillStyle = "red";
         ctx.fillRect(this.pos[0], this.pos[1], 50, 50);
@@ -21,22 +23,22 @@ const Sprite = {
 }
 const Space = {
     sideLength: 50,
-    relativePos:{
-        x: 0, y: 0
-    },
+    grids: data["space.grids"],
+    relativePos: data["space.relativePos"],
     tileDict: {
         0: "green",
         1: "black"
     },
     draw: function(ctx) {
-        console.log("grids:",this.grids);
-        let gridX = 0; let gridY = 0;
+        let gridY = 0;
         for (grid_line of this.grids) {
+            let gridX = 0;
             for (let grid of grid_line) {
-                ctx.fillStyle = tileDict[grid];
+                //console.log("gridP:", this.relativePos[0], gridX, this.sideLength);
+                ctx.fillStyle = this.tileDict[grid];
                 ctx.fillRect(
-                    this.relativePos.x + gridX*this.sideLength,
-                    this.relativePos.y + gridY*this.sideLength,
+                    this.relativePos[0] + gridX*this.sideLength,
+                    this.relativePos[1] + gridY*this.sideLength,
                     this.sideLength,
                     this.sideLength)
                 gridX += 1;
@@ -45,7 +47,7 @@ const Space = {
         }
     }
 }
-
+console.log(Space.relativePos)
 
 
 $(function () {
@@ -140,8 +142,9 @@ $(function () {
         window.requestAnimationFrame(animate);
         ctx.clearRect(0,0,canvas.width, canvas.height);
         socket.emit("key", keystatus);
-        Sprite.draw(ctx);
+        
         Space.draw(ctx);
+        Sprite.draw(ctx);
         //console.log(spriteposition);
     }
     animate();
