@@ -11,10 +11,13 @@ socketio = SocketIO(app)
 with open("static/staticdata.json") as f:
     data = json.load(f)
 
-last_keys = data["last_keys"] 
+last_keys = {
+    "vertical": "",
+    "horizonal": ""
+}
 spriteposition = data["spriteposition"] #[x,y]
 grids = data["grids"] #12*12, from [1,1] to [10,10]
-relative_pos = [0,0]
+
 
 #============================
 #region Routes
@@ -30,17 +33,8 @@ def begin():
 def get_data():
     return {
         "sprite.pos": spriteposition,
-        "space.grids": grids,
-        "space.relativePos": relative_pos
+        "space.grids": grids
     }
-
-@socketio.on('send')
-def chat(data):
-    socketio.emit('get', data)
-
-@socketio.on('test')
-def test():
-    socketio.send("test")
 
 @socketio.on('connect')
 def connect():
@@ -54,31 +48,32 @@ def disconnect():
 
 @socketio.on("key")
 def spritemove(keys, **somethingthatshouldnotexist):
-    toEmit = [0, 0]
+    variation_x = 0
+    variation_y = 0
 
     #horizonal ------
     if (keys["a"]):
-        toEmit[0] = 1
+        variation_x = 1
         #print("key a") ###debug
         last_keys["horizonal"] = "a"
     elif (keys["d"]):
-        toEmit[0] = -1
+        variation_x = -1
         last_keys["horizonal"] = "d"
     else:
-        toEmit[0] = 0
+        variation_x = 0
 
     #vertical  |||||||
     if (keys["w"]):
-        toEmit[1] = 1
+        variation_y = 1
         last_keys["vertical"] = "w"
     elif (keys["s"]):
-        toEmit[1] = -1
+        variation_y = -1
         last_keys["vertical"] = "s"
     else:
-        toEmit[1] = 0
+        variation_y = 0
 
-    spriteposition[0] += toEmit[0]
-    spriteposition[1] += toEmit[1]
+    spriteposition[0] += variation_x
+    spriteposition[1] += variation_y
     #emit session
     socketio.emit("sprite.pos", spriteposition)
 

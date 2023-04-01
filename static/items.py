@@ -26,8 +26,8 @@ class active_ability:
     enchantment = dict
     healing: float = field(init = False)
 
-        def __post_init__(self):
-            pass
+    def __post_init__(self):
+        pass
 
 @dataclass
 class kit:
