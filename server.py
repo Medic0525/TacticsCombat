@@ -15,8 +15,8 @@ last_keys = {
     "vertical": "",
     "horizonal": ""
 }
-spriteposition = data["spriteposition"] #[x,y]
-grids = data["grids"] #12*12, from [1,1] to [10,10]
+spriteposition = [400, 300] #[x,y]
+
 
 
 #============================
@@ -32,8 +32,10 @@ def begin():
 @app.route('/data')
 def get_data():
     return {
-        "sprite.pos": spriteposition,
-        "space.grids": grids
+        **{
+            "sprite.pos": spriteposition
+        }, 
+        **data
     }
 
 @socketio.on('connect')
