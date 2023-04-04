@@ -11,8 +11,9 @@ $.get(url+"/data", function(datax){
 const TILESIZE = 50;
 const CANVASWIDTH = 600;
 const CANVASHEIGHT = 600;
-const GRIDSAMOUNT_X = data["space.grids"].length;
-const GRIDSAMOUNT_Y = data["space.grids"][0].length;
+const GRIDSAMOUNT_X = data["grids"].length;
+const GRIDSAMOUNT_Y = data["grids"][0].length;
+const TILEDICT = data["tiledict"]
 /*
 const player0 = {
     pos: data["sprite.pos"],
@@ -61,9 +62,7 @@ class Element {
     draw () {
         throw new Error("wtf hell man u haven't implemented draw() yet!")
     }
-
 }
-
 class Player extends Element {
     constructor (pos) {
         super(pos, [50,50]);
@@ -77,15 +76,13 @@ class Player extends Element {
         this.draw(ctx)
     }
 }
-
-
-class ProtoSpace extends Element {
-    tileDict = {0: "green",1: "black"};
+class BackGround extends Element {
+    tileDict = {0: "green",1: "black", 2: "yellow"};
     constructor (gridsCtx) {
         super([0,0], [TILESIZE*GRIDSAMOUNT_X, TILESIZE*GRIDSAMOUNT_X]);
         this.gridsCtx = gridsCtx;
-        this.posX = 0;
-        this.posY = 0;
+        this.posX = -5*TILESIZE;
+        this.posY = -5*TILESIZE;
     }
     draw (ctx) {
         let gridY = 0;
@@ -107,52 +104,98 @@ class ProtoSpace extends Element {
     update (ctx) {
         this.draw(ctx);
         if (this.selected) {
+            const X1 = this.posX+1;
+            const X2 = this.posX+CANVASWIDTH-1;
+            const Y1 = this.posY+1;
+            const Y2 = this.posY+CANVASHEIGHT-1;
             ctx.beginPath();
-            ctx.moveTo(1,1);
-            ctx.lineTo(CANVASWIDTH-1,1)
-            ctx.lineTo(CANVASWIDTH-1,CANVASHEIGHT-1)
-            ctx.lineTo(1,CANVASHEIGHT-1)
-            ctx.lineTo(1,1)
+            ctx.moveTo(X1,Y1);
+            ctx.lineTo(X1,Y2);
+            ctx.lineTo(X2,Y2);
+            ctx.lineTo(X2,Y1);
+            ctx.lineTo(X1,Y1);
             ctx.strokeStyle = "yellow";
             ctx.stroke();
             ctx.closePath();
         }
     }
 }
+/* 1932
+affected variables:[
+    _player0 -> stage.players[0]
+    _player1 -> stage.players[1]
+    _space -> stage.background,
+    _playerList,
+    _divisionList,
+    _elementList,
+    _isInAnyonesField
 
-player0 = new Player([10,20]);
+]
+    
+*/
+/*
+const player0 = new Player([10,20]);
 player0.setPos(data["sprite.pos"]);
-player1 = new Player([50,50]);
-space = new ProtoSpace(data["space.grids"]);
-playerList = [player0, player1];
-divisionList = [space];
+const player1 = new Player([50,50]);
+let playerList = [player0, player1];
+let divisionList = [background];
 elementList = () => [].concat(playerList, divisionList);
-keystatus = {
-    "d": false, 'a': false, "w": false, 's': false
-}
+*/
 
 deepCopyOf = (arr) => {
     let newarr = [];
     for (let item of arr) newarr.push(item)
     return newarr
 }
-isInAnyonesField = (list,x,y) => {
-    for (let e of list) if (e.isInField(x, y)) return e;
-}
+
 itemPoped = (arr, item) => {
     let others = deepCopyOf (arr);
     let index = arr.indexOf(item);
-    if (index===-1) throw new Error("At canvas.oncick: why isn't the player there?")
+    if (index===-1) throw new Error("why isn't the item you're looking for there?")
     others.splice(index,1);
     return others
 }
+
+const stage = {
+    background: new BackGround(data["grids"]),
+    posX: this.background.posX,
+    posY: this.background.posY,
+
+    players: [],
+    elements: [].concat(this.players,[this.background]),
+
+    getRelativePos: (element) => {
+        return [
+            element.posX-this.posX, 
+            element.poxY-this.posY
+        ]
+    },
+    isInAnyonesField: (x,y) => {
+        for (let e of elements) if (e.isInField(x, y)) return e;
+    },
+    elementsUpdate: () => {
+        this.elements = this.players.concat([this.background])
+    },
+    appendPlayer: (newPlayer) => {
+        this.players.push(newPlayer);
+        this.elementsUpdate()
+    }
+}
+stage.appendPlayer(new Player([10,20]));
+stage.appendPlayer(new Player([50,50]));
+stage.players[0].setPos(data["sprite.pos"]);
+
+
 
 
 $(function () {
     var socket = io.connect(); 
     var canvas = document.querySelector("canvas");
     var ctx = canvas.getContext('2d');
-    var elementLastClicked = undefined
+    var elementLastClicked = undefined;
+    let keystatus = {
+        "d": false, 'a': false, "w": false, 's': false
+    }
 
     canvas.width = CANVASWIDTH;
     canvas.height = CANVASHEIGHT;
@@ -172,15 +215,14 @@ $(function () {
     
         $(canvas).mousedown(function (event) {
             //1740. now doing: make it possible to only trigger log when mousedown is not on player
-            if (isInAnyonesField(elementList(), event.offsetX, event.offsetY) === space){
-                space.dragged = true;
-                space.draggingX = event.offsetX;
-                console.log("at mousedown event: offset Y", event.offsetY);
-                space.draggingY = event.offsetY
+            if (isInAnyonesField(elementList(), event.offsetX, event.offsetY) === background){
+                background.dragged = true;
+                background.draggingX = event.offsetX-background.posX;
+                background.draggingY = event.offsetY-background.posY
             }
         })
         $(canvas).mousemove(function (event) {
-            if (space.dragged) space.drag(event.offsetX,event.offsetY)
+            if (background.dragged) background.drag(event.offsetX,event.offsetY)
         })
 
         $(canvas).mouseup(function (event) {
@@ -199,11 +241,8 @@ $(function () {
         socket.on("sprite.pos", function (spriteposition) {
             player0.setPos (spriteposition); //[]
         });
-        socket.on("space.grids", function (grids) {
-            space.gridsCtx = grids; //[[]]
-        });
-        socket.on("space.relativePos", function (relativePos){
-            space.relativePos = relativePos; // []
+        socket.on("background.grids", function (grids) {
+            background.gridsCtx = grids; //[[]]
         });
     }
     dataUpdate();
@@ -255,7 +294,7 @@ $(function () {
         let keys = ["w", "a", "s", "d"];
         window.addEventListener('keypress', (event) => {
             if (event.key === 'c') {
-                space.setPos([0,0])
+                background.setPos([0,0])
             } 
         })
 
