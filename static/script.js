@@ -61,6 +61,7 @@ const GRIDSAMOUNT_X = data["grids"].length;
 const GRIDSAMOUNT_Y = data["grids"][0].length;
 const BACKGROUND_INITIAL_GRID_POS = [-5,-5];
 const TILEDICT = data["tiledict"];
+let clientControllingSpriteIndex = 0;
 
 
 class Element {
@@ -86,6 +87,7 @@ class Element {
     };
     
     get gridPos() {return [this.gridPosX, this.gridPosY]}
+    // set gridPos(arg) {throw Error("gridPos is now unable to be modified straightly. Try emitting request to the server.")}
     set gridPos(gridPos) {
         if (!this.container) throw new Error("There's no container in",this,"but you're trying to set gridPos.")
         this.gridPosX = gridPos[0];
@@ -108,7 +110,7 @@ class Element {
         this.draggingY = undefined;
         this.dragged = false;
     }
-    isInField (x, y) {
+    isContaining (x, y) {
         if (this.posX < x && x < this.posX+this.sizeX && this.posY < y && y < this.posY+this.sizeY){
             return true
         }
@@ -118,11 +120,12 @@ class Element {
         this.posX+= x;
         this.posY+= y;
     }
-    setGridPosVariation(x,y) {
+    /*
+    setGridPosVariation(x,y) { // deprecated method
         this.gridPosX+= x;
         this.gridPosY+= y;
         return;
-    }
+    }*/
     getPosRelativeTo (element) { // 自己相對於element的位置
         return [
             this.posX-element.posX,
@@ -139,10 +142,11 @@ class Element {
         this.posX = element.posX+relPos[0];
         this.posY = element.posY+relPos[1];
     }
+    /*
     setRelativeGridPos (element, relGridPos) {
         this.gridPosX = element.gridPosX+relGridPos[0];
         this.gridPosY = element.gridPosX+relGridPos[1];
-    }
+    }*/
     drag(x,y) {
         if (!this.draggable) return;
         this.pos = [x-this.draggingX,y-this.draggingY];
@@ -265,11 +269,11 @@ class Stage extends Element{
             undefined
         );
         this.background = new BackGround(gridsData, this);
-        this.players = [];
+        this.sprites = [];
         this.draggable = true;
     }
     get elements() {
-        return this.players.concat([this.background])
+        return this.sprites.concat([this.background])
     }
     
     /*
@@ -284,10 +288,10 @@ class Stage extends Element{
             posX: x,
             posY: y
         }
-        console.log("pseudoElement:",pseudoElement);
+        // console.log("pseudoElement:",pseudoElement);
         let relPos = this.getPosRelativeTo(pseudoElement)
-        console.log("stage.pos:", [this.posX, this.posY])
-        console.log("relPos:" ,relPos)
+        // console.log("stage.pos:", [this.posX, this.posY])
+        // console.log("relPos:" ,relPos)
         return [
             parseInt(-relPos[0]/TILESIZE), 
             parseInt(-relPos[1]/TILESIZE)
@@ -309,8 +313,9 @@ class Stage extends Element{
         //console.log("pos is set to", x-this.draggingX,",",y-this.draggingY)
         this.posAll = [x-this.draggingX,y-this.draggingY]
     }  
-    isInAnyonesField (x,y) {
-        for (let e of this.elements) if (e.isInField(x, y)) return e;
+    oneContaining (x,y) {
+        for (let e of this.elements) if (e.isContaining(x, y)) return e;
+        return undefined;
     }
     isInBorder (comparator, theCompared=this.background) {
         return (
@@ -332,7 +337,7 @@ class Stage extends Element{
         return undefined;
     }
     appendPlayerFrom (spriteData) {
-        this.players.push(new Player(spriteData, this));
+        this.sprites.push(new Player(spriteData, this));
     }
 }
 
@@ -354,7 +359,7 @@ $(function () {
 
     listener = () => {
         $(canvas).click(function(event){
-            e = stage.isInAnyonesField(event.offsetX, event.offsetY)
+            e = stage.oneContaining(event.offsetX, event.offsetY)
             if (isLastMouseEventDragging) return;
             if (e) {
                 e.selected = true;
@@ -362,9 +367,13 @@ $(function () {
                 notCilcked = itemPoped(stage.elements, e);
             }
             else notCilcked = stage.elements;
-            if (e === stage.background && stage.movingOne) {
-                stage.movingOne.gridPos = stage.gridLocationOf(event.offsetX, event.offsetY)
-                console.log("you are supposed touching",e.gridPos)
+
+            let movingOne = stage.movingOne;
+            let eventGridLocation = stage.gridLocationOf(event.offsetX, event.offsetY);
+            if (e === stage.background && movingOne) {
+                const index = stage.sprites.indexOf(movingOne);
+                requsetPlayerMovement(index, eventGridLocation)
+                // console.log("you are supposedly touching",eventGridLocation)
             }
             
             for (element of notCilcked) element.selected = false
@@ -373,7 +382,7 @@ $(function () {
         $(canvas).mousedown(function (event) {
             isLastMouseEventDragging = false
             //1740. now doing: make it possible to only trigger log when mousedown is not on player
-            let element = stage.isInAnyonesField(event.offsetX, event.offsetY)
+            let element = stage.oneContaining(event.offsetX, event.offsetY)
             if (element === stage.background){
                 stage.touch(event.offsetX,event.offsetY);
             } else {
@@ -396,13 +405,27 @@ $(function () {
     }
     listener();
     
+    requsetPlayerMovement = function (index, location) {
+        console.log("requsetPlayerMovement")
+        if (index === clientControllingSpriteIndex) {
+            socket.emit("move_request", {
+                "index": index,
+                "position": location
+            })
+        }
+    }
 
     dataUpdate = () => { // it is currently not working cause there's no "sprites" or "grids" emit.
         socket.on("sprites", function (sprites) {
-            stage.players[0].setRelativePos (stage, sprites); //[]
+            stage.sprites[0].setRelativePos (stage, sprites); //[]
         });
         socket.on("background.grids", function (grids) {
             stage.background.gridsCtx = grids; //[[]]
+        });
+        socket.on("sprites_data_update", function (response) {
+            for (spriteIndex in response) {
+                stage.sprites[spriteIndex].gridPos = response[spriteIndex]["gridpos"]
+            }
         });
     }
     dataUpdate();

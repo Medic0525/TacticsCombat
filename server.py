@@ -11,7 +11,7 @@ socketio = SocketIO(app)
 with open("static/stages/stage1.json") as f:
     data = json.load(f)
 
-spriteposition = data["sprites"]
+sprites_data = data["sprites"]
 
 @app.route('/')
 def index():
@@ -33,9 +33,15 @@ def connect():
 def disconnect():
     print("Client disconnected")
 
+def move_process (request):
+    sprites_data[request["index"]]["gridpos"] = request["position"]
+
 @socketio.on("move_request")
-def move_request(position):
-    socketio.emit("sprites", spriteposition)
+def move_request(request):
+    print("received:",request)
+    move_process(request)
+    socketio.emit("sprites_data_update", sprites_data)
+    
 
 '''
 @socketio.on("key")
