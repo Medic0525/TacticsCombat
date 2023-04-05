@@ -8,19 +8,11 @@ app = Flask(__name__)
 app.config.from_object(configs)
 socketio = SocketIO(app)
 
-with open("static/staticdata.json") as f:
+with open("static/stages/stage1.json") as f:
     data = json.load(f)
 
-last_keys = {
-    "vertical": "",
-    "horizonal": ""
-}
-spriteposition = [400, 300] #[x,y]
+spriteposition = data["sprites"]
 
-
-
-#============================
-#region Routes
 @app.route('/')
 def index():
     return render_template("index.html")
@@ -29,14 +21,9 @@ def index():
 def begin():
     return render_template("a.html")
 
-@app.route('/data')
+@app.route('/stage1')
 def get_data():
-    return {
-        **{
-            "sprite.pos": spriteposition
-        }, 
-        **data
-    }
+    return {**data}
 
 @socketio.on('connect')
 def connect():
@@ -45,9 +32,12 @@ def connect():
 @socketio.on("disconnect")
 def disconnect():
     print("Client disconnected")
-#endregion
-#============================
 
+@socketio.on("move_request")
+def move_request(position):
+    socketio.emit("sprites", spriteposition)
+
+'''
 @socketio.on("key")
 def spritemove(keys, **somethingthatshouldnotexist):
     variation_x = 0
@@ -55,21 +45,21 @@ def spritemove(keys, **somethingthatshouldnotexist):
 
     #horizonal ------
     if (keys["a"]):
-        variation_x = 1
+        variation_x = -1
         #print("key a") ###debug
         last_keys["horizonal"] = "a"
     elif (keys["d"]):
-        variation_x = -1
+        variation_x = 1
         last_keys["horizonal"] = "d"
     else:
         variation_x = 0
 
     #vertical  |||||||
     if (keys["w"]):
-        variation_y = 1
+        variation_y = -1
         last_keys["vertical"] = "w"
     elif (keys["s"]):
-        variation_y = -1
+        variation_y = 1
         last_keys["vertical"] = "s"
     else:
         variation_y = 0
@@ -77,10 +67,10 @@ def spritemove(keys, **somethingthatshouldnotexist):
     spriteposition[0] += variation_x
     spriteposition[1] += variation_y
     #emit session
-    socketio.emit("sprite.pos", spriteposition)
+'''
 
 if __name__ == "__main__":
-    socketio.run(app=app, host='0.0.0.0', port=81)
+    socketio.run(app=app, host='0.0.0.0', port=80)
 
 # render_template 只能在flask的裝飾符包裝的函數底下執行。
 # eventlet 必須安裝

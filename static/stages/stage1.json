@@ -27,6 +27,14 @@
         "black", 
         "yellow",
         "purple"
+    ],
+    "sprites": [
+        {
+            "gridpos": [4,3]
+        },
+        {
+            "gridpos": [7,7]
+        }
     ]
 
 }

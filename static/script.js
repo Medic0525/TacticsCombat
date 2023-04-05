@@ -59,10 +59,13 @@ const CANVASWIDTH = 600;
 const CANVASHEIGHT = 600;
 const GRIDSAMOUNT_X = data["grids"].length;
 const GRIDSAMOUNT_Y = data["grids"][0].length;
-const TILEDICT = data["tiledict"]
+const BACKGROUND_INITIAL_GRID_POS = [-5,-5];
+const TILEDICT = data["tiledict"];
+
 
 class Element {
-    constructor (gridPos, size, layer) {
+    constructor (gridPos, size, container, layer) {
+        this.container = container;
         this.gridPosX = gridPos[0];
         this.gridPosY = gridPos[1];
         this.posX = this.gridPosX*TILESIZE;
@@ -84,8 +87,11 @@ class Element {
     
     get gridPos() {return [this.gridPosX, this.gridPosY]}
     set gridPos(gridPos) {
+        if (!this.container) throw new Error("There's no container in",this,"but you're trying to set gridPos.")
         this.gridPosX = gridPos[0];
         this.gridPosY = gridPos[1];
+        this.posX = this.container.posX + this.gridPosX*TILESIZE;
+        this.posY = this.container.posY + this.gridPosY*TILESIZE;
     }
     get size() {return [this.sizeX, this.sizeY]};
     get dragging() {return [this.dragging[0], this.dragging[1]]};
@@ -147,17 +153,23 @@ class Element {
     }
 }
 class Player extends Element {
-    constructor (spriteData) {
+    constructor (spriteData,container) {
         super(
             spriteData["gridpos"], 
-            [50,50]
+            [50,50],
+            container,
+            undefined
         );
         this.selected = undefined;
+        this.moving = false;
     }
     toggleMoving () {
-        console.log("toggleMoving() toggled.")
-        if (this.moving) this.moving = false; 
-        else this.moving = true; 
+        if (this.moving) {
+            this.moving = false; 
+        }    
+        else {
+            this.moving = true; 
+        }
     }
     get selected () {
         return this._selected
@@ -182,8 +194,13 @@ class Player extends Element {
 }
 class BackGround extends Element {
     tileDict = {0: "green",1: "black", 2: "yellow"};
-    constructor (gridsCtx) {
-        super([-5,-5], [TILESIZE*GRIDSAMOUNT_X, TILESIZE*GRIDSAMOUNT_Y]);
+    constructor (gridsCtx,container) {
+        super(
+            BACKGROUND_INITIAL_GRID_POS, 
+            [TILESIZE*GRIDSAMOUNT_X, TILESIZE*GRIDSAMOUNT_Y],
+            container,
+            undefined
+        );
         this.gridsCtx = gridsCtx;
     }
     draw (ctx) {
@@ -240,9 +257,14 @@ itemPoped = (arr, item) => {
 }
 
 class Stage extends Element{
-    constructor (bg) {
-        super(bg.gridPos, bg.size);
-        this.background = bg;
+    constructor (gridsData) {
+        super(
+            BACKGROUND_INITIAL_GRID_POS, 
+            [TILESIZE*GRIDSAMOUNT_X, TILESIZE*GRIDSAMOUNT_Y],
+            undefined,
+            undefined
+        );
+        this.background = new BackGround(gridsData, this);
         this.players = [];
         this.draggable = true;
     }
@@ -258,7 +280,18 @@ class Stage extends Element{
     }
     */
     gridLocationOf (x,y) {
-        return [parseInt(x/TILESIZE), parseInt(y/TILESIZE)]
+        let pseudoElement = {
+            posX: x,
+            posY: y
+        }
+        console.log("pseudoElement:",pseudoElement);
+        let relPos = this.getPosRelativeTo(pseudoElement)
+        console.log("stage.pos:", [this.posX, this.posY])
+        console.log("relPos:" ,relPos)
+        return [
+            parseInt(-relPos[0]/TILESIZE), 
+            parseInt(-relPos[1]/TILESIZE)
+        ]
     }
     set posAll ([x,y]) {
         let relPos = this.getPosRelativeTo({
@@ -298,14 +331,14 @@ class Stage extends Element{
             if (e.moving) return e;
         return undefined;
     }
-    appendPlayers (newPlayer) {
-        this.players = this.players.concat(newPlayer);
+    appendPlayerFrom (spriteData) {
+        this.players.push(new Player(spriteData, this));
     }
 }
 
-let stage = new Stage(new BackGround(data["grids"]));
+let stage = new Stage(data["grids"]);
 for (let spriteData of data["sprites"]) {
-    stage.appendPlayers([new Player(spriteData)])
+    stage.appendPlayerFrom(spriteData)
 }
 
 $(function () {
@@ -317,22 +350,28 @@ $(function () {
     canvas.width = CANVASWIDTH;
     canvas.height = CANVASHEIGHT;
 
+    let isLastMouseEventDragging = false;
+
     listener = () => {
         $(canvas).click(function(event){
             e = stage.isInAnyonesField(event.offsetX, event.offsetY)
+            if (isLastMouseEventDragging) return;
             if (e) {
                 e.selected = true;
                 elementLastClicked = e;
                 notCilcked = itemPoped(stage.elements, e);
             }
-            if (e === stage.background && stage.movingOne) {
-                e.gridPos = stage.gridLocationOf(event.offsetX, event.offsetY)
-            }
             else notCilcked = stage.elements;
+            if (e === stage.background && stage.movingOne) {
+                stage.movingOne.gridPos = stage.gridLocationOf(event.offsetX, event.offsetY)
+                console.log("you are supposed touching",e.gridPos)
+            }
+            
             for (element of notCilcked) element.selected = false
         })
     
         $(canvas).mousedown(function (event) {
+            isLastMouseEventDragging = false
             //1740. now doing: make it possible to only trigger log when mousedown is not on player
             let element = stage.isInAnyonesField(event.offsetX, event.offsetY)
             if (element === stage.background){
@@ -343,6 +382,7 @@ $(function () {
             }
         })
         $(canvas).mousemove(function (event) {
+            isLastMouseEventDragging = true;
             if (stage.dragged) stage.drag(event.offsetX,event.offsetY)
         })
 
@@ -380,7 +420,6 @@ $(function () {
     animate = () => {
         window.requestAnimationFrame(animate);
         ctx.clearRect(0,0,canvas.width, canvas.height);
-        socket.emit("key", keystatus);
         drawAll(stage.elements, ctx)
         //console.log(spriteposition);
     }
