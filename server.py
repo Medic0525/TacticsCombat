@@ -78,5 +78,5 @@ def spritemove(keys, **somethingthatshouldnotexist):
 if __name__ == "__main__":
     socketio.run(app=app, host='0.0.0.0', port=80)
 
-# render_template ¥u¯à¦bflaskªº¸Ë¹¢²Å¥]¸Ëªº¨ç¼Æ©³¤U°õ¦æ¡C
-# eventlet ¥²¶·¦w¸Ë
+# render_template åªèƒ½åœ¨flaskçš„è£é£¾ç¬¦åŒ…è£çš„å‡½æ•¸åº•ä¸‹åŸ·è¡Œã€‚
+# eventlet å¿…é ˆå®‰è£

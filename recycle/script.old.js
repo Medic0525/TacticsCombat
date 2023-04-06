@@ -88,7 +88,7 @@ class Element { // old element class that doesn't use grid pos
         this.dragged = false;
         this.draggingX = undefined;
         this.draggingY = undefined
-        this.layer = layer; //©|¥¼¹ê¸Ë
+        this.layer = layer; //å°šæœªå¯¦è£
     }
     get pos() {return [this.posX, this.posY]};
     get size() {return [this.sizeX, this.sizeY]};
@@ -121,7 +121,7 @@ class Element { // old element class that doesn't use grid pos
         this.posX = a;
         this.posY = b;
     }
-    getPosRelativeTo (element) { // ¦Û¤v¬Û¹ï©óelementªº¦ì¸m
+    getPosRelativeTo (element) { // è‡ªå·±ç›¸å°æ–¼elementçš„ä½ç½®
         return [
             this.posX-element.posX,
             this.posY-element.posY

@@ -1,19 +1,19 @@
 # DATA TEMPLATES
 
-���F���j�a�b�g�{���ɡA���P�@�Ӹ�Ư঳�ۦP��Ū�g�榡�A�o�Ӹ�Ƨ��M���s��`json`���ɮסA�ǥH�W�d�C
-²��ӻ��A�N�O�Τ@�׶q�ŰաI
+為了讓大家在寫程式時，對於同一個資料能有相同的讀寫格式，這個資料夾專門存放`json`等檔案，藉以規範。
+簡單來說，就是統一度量衡啦！
 
-## �R�W
+## 命名
 
-�бN�ɮץH `xxx_ex.json` ��`ooo_ex.py`���覡�R�W�I
+請將檔案以 `xxx_ex.json` 或`ooo_ex.py`等方式命名！
 
-## �w�n�O�����
+## 已登記的資料
 
 - stage_ex.json
-- - ������ƼҪO�C
-- - `grids`: �I��
-- - `tiledict`: �C�Ӻ�����ܪ����e�C�ثe�O�C��A�N�ӷ|�x�s���ɡC
-- - `sprites`: �O�@��`�}�C`�A�̭��]���x�s�C�Ө����ƪ�`�r��`�C�ثe���x�s�����m`gridpos`�C�������ӭn��`playerdata_ex.json`�P�B�C
+- - 場景資料模板。
+- - `grids`: 背景
+- - `tiledict`: 每個網格顯示的內容。目前是顏色，將來會儲存圖檔。
+- - `sprites`: 是一個`陣列`，裡面包著儲存每個角色資料的`字典`。目前僅儲存網格位置`gridpos`。之後應該要跟`playerdata_ex.json`同步。
 
 - playerdata_ex.json
-- - ��Ӫ��a����ƼҪO�C
+- - 單個玩家的資料模板。
