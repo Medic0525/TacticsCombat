@@ -1,4 +1,4 @@
-class Element {
+export class Element {
     constructor (gridPos, size, container, layer) {
         this.container = container;
         this.gridPosX = gridPos[0];
@@ -90,7 +90,9 @@ class Element {
         throw new Error("wtf hell man u haven't implemented draw() yet!")
     }
 }
-class Player extends Element {
+
+
+export class Player extends Element {
     constructor (spriteData,container) {
         super(
             spriteData["gridpos"], 
@@ -130,7 +132,7 @@ class Player extends Element {
         } 
     }
 }
-class BackGround extends Element {
+export class BackGround extends Element {
     tileDict = {0: "green",1: "black", 2: "yellow"};
     constructor (gridsCtx,container) {
         super(
@@ -179,7 +181,7 @@ class BackGround extends Element {
         }
     }
 }
-class Stage extends Element{
+export class Stage extends Element{
     constructor (gridsData) {
         super(
             BACKGROUND_INITIAL_GRID_POS, 
