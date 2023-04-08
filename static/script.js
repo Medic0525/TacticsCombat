@@ -67,12 +67,12 @@ let clientControllingSpriteIndex = 0;
 
 
 
-deepCopyOf = (arr) => {
+function deepCopyOf (arr) {
     let newarr = [];
     for (let item of arr) newarr.push(item)
     return newarr
 }
-itemPoped = (arr, item) => {
+function itemPoped (arr, item) {
     let others = deepCopyOf (arr);
     let index = arr.indexOf(item);
     if (index===-1) throw new Error("why isn't the item you're looking for there?")
@@ -81,8 +81,8 @@ itemPoped = (arr, item) => {
 }
 
 import {
-    Element, Player, BackGround, Stage
-} from "modules/frontend_classes.js";
+    Stage
+} from "/static/modules/frontendClasses.js";
 
 let stage = new Stage(data["grids"]);
 for (let spriteData of data["sprites"]) {
