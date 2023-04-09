@@ -82,9 +82,9 @@ function itemPoped (arr, item) {
 
 import {
     Stage
-} from "/static/modules/frontendClasses.js";
+} from "/static/modules/frontend/spriteClasses.js";
 
-let stage = new Stage(data["grids"]);
+let stage = new Stage(data, configs);
 for (let spriteData of data["sprites"]) {
     stage.appendPlayerFrom(spriteData)
 }
@@ -102,7 +102,7 @@ $(function () {
 
     listener = () => {
         $(canvas).click(function(event){
-            e = stage.oneContaining(event.offsetX, event.offsetY)
+            e = stage.oneContaining([event.offsetX, event.offsetY])
             if (isLastMouseEventDragging) return;
             if (e) {
                 e.selected = true;
@@ -111,12 +111,12 @@ $(function () {
             }
             else notCilcked = stage.elements;
 
-            let movingOne = stage.movingOne;
-            let eventGridLocation = stage.gridLocationOf(event.offsetX, event.offsetY);
-            if (e === stage.background && movingOne) {
-                const index = stage.sprites.indexOf(movingOne);
-                requsetPlayerMovement(index, eventGridLocation)
-                // console.log("you are supposedly touching",eventGridLocation)
+            let oneReadyToMove = stage.oneReadyToMove;
+            let eventGridLocation = stage.gridLocationOf([event.offsetX, event.offsetY]);
+            if (e === stage.background && oneReadyToMove) {
+                const index = stage.sprites.indexOf(oneReadyToMove);
+                requsetPlayerMovement(index, eventGridLocation);
+                // console.log("you are supposedly holding",eventGridLocation)
             }
             
             for (element of notCilcked) element.selected = false
@@ -125,17 +125,17 @@ $(function () {
         $(canvas).mousedown(function (event) {
             isLastMouseEventDragging = false
             //1740. now doing: make it possible to only trigger log when mousedown is not on player
-            let element = stage.oneContaining(event.offsetX, event.offsetY)
+            let element = stage.oneContaining([event.offsetX, event.offsetY])
             if (element === stage.background){
-                stage.touch(event.offsetX,event.offsetY);
+                stage.hold([event.offsetX,event.offsetY]);
             } else {
                 
-                //element.touch(event.offsetX,event.offsetY);
+                //element.hold([event.offsetX,event.offsetY]);
             }
         })
         $(canvas).mousemove(function (event) {
             isLastMouseEventDragging = true;
-            if (stage.dragged) stage.drag(event.offsetX,event.offsetY)
+            if (stage.dragged) stage.drag([event.offsetX,event.offsetY])
         })
 
         $(canvas).mouseup(function (event) {
@@ -173,14 +173,9 @@ $(function () {
     }
     dataUpdate();
     
-    drawAll = (list,ctx) => {
-        for (let reversedIndex in list) {
-            let element = list[list.length-reversedIndex-1]
-            element.update(ctx)
-        }
-    }
+    
 
-    drawAll(stage.elements, ctx);
+    stage.drawAll(ctx);
 
     
     animate = () => {

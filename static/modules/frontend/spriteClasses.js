@@ -1,39 +1,31 @@
+import {
+    multiply2DVectors as multArr,
+    addUp2DVectors as addArr,
+    minus2DVectors as minusArr
+} from "/static/modules/frontend/functions.js";
+
 export class Element {
-    constructor (gridPos, size, container, layer) {
-        this.container = container;
-        this.gridPosX = gridPos[0];
-        this.gridPosY = gridPos[1];
-        this.posX = this.gridPosX*TILESIZE;
-        this.posY = this.gridPosY*TILESIZE;
-        this.sizeX = size[0];
-        this.sizeY = size[1];
+    constructor (pos, size, stage, layer) {
+        this.stage = stage;
+        this.pos = pos;
+        this.size = size;
         this.selected = false;
         this.dragged = false;
-        this.draggingX = undefined;
-        this.draggingY = undefined
+        this.dragging = [undefined,undefined];
         this.layer = layer; //尚未實裝
     }
-    get pos() {return [this.posX, this.posY]};
+    get bottomRight () {return [this.posX+this.sizeX,this.posY+this.sizeY]}
 
-    set pos (pos) {
-        this.posX = pos[0];
-        this.posY = pos[1]
-    };
-    
-    get gridPos() {return [this.gridPosX, this.gridPosY]}
-    // set gridPos(arg) {throw Error("gridPos is now unable to be modified straightly. Try emitting request to the server.")}
-    set gridPos(gridPos) {
-        if (!this.container) throw new Error("There's no container in",this,"but you're trying to set gridPos.")
-        this.gridPosX = gridPos[0];
-        this.gridPosY = gridPos[1];
-        this.posX = this.container.posX + this.gridPosX*TILESIZE;
-        this.posY = this.container.posY + this.gridPosY*TILESIZE;
-    }
-    get size() {return [this.sizeX, this.sizeY]};
-    get dragging() {return [this.dragging[0], this.dragging[1]]};
-    get bottomRightX() {return this.posX+this.sizeX}
-    get bottomRightY() {return this.posY+this.sizeY}
-    touch (x,y) {
+    //#region : Position Components Getter
+    get posX () {return this.pos[0]}
+    get posY () {return this.pos[1]}
+    get draggingX() {return this.dragging[0]}
+    get draggingX() {return this.dragging[1]}
+    get bottomRightX() {return this.bottomRight[0]}
+    get bottomRightY() {return this.bottomRight[1]}
+    //#endregion
+    hold ([x,y]) {
+        if (!this.draggable) throw new Error("This element is not draggable!")
         this.draggingX = x-this.posX;
         this.draggingY = y-this.posY;
         this.dragged = true;
@@ -44,44 +36,22 @@ export class Element {
         this.draggingY = undefined;
         this.dragged = false;
     }
-    isContaining (x, y) {
+    isContaining ([x,y]) {
         if (this.posX < x && x < this.posX+this.sizeX && this.posY < y && y < this.posY+this.sizeY){
             return true
         }
         return false
     }
-    set posVariation([x,y]) {
-        this.posX+= x;
-        this.posY+= y;
+    setPosVariation([x,y]) {
+        this.pos = addArr(this.pos,[x,y])
     }
-    /*
-    setGridPosVariation(x,y) { // deprecated method
-        this.gridPosX+= x;
-        this.gridPosY+= y;
-        return;
-    }*/
-    getPosRelativeTo (element) { // 自己相對於element的位置
-        return [
-            this.posX-element.posX,
-            this.posY-element.posY
-        ]
+    getPosRelativeTo ([x,y]) { // 自己相對於element的位置
+        return minusArr(this.pos, [x,y])
     }
-    getGridPosRelativeTo (element) {
-        return [
-            this.gridPosX-element.gridPosX,
-            this.gridPosX-element.gridPosX
-        ]
+    setRelativePos (elementPos, relPos) {
+        this.pos = addArr(elementPos, relPos);
     }
-    setRelativePos (element, relPos) {
-        this.posX = element.posX+relPos[0];
-        this.posY = element.posY+relPos[1];
-    }
-    /*
-    setRelativeGridPos (element, relGridPos) {
-        this.gridPosX = element.gridPosX+relGridPos[0];
-        this.gridPosY = element.gridPosX+relGridPos[1];
-    }*/
-    drag(x,y) {
+    drag([x,y]) {
         if (!this.draggable) return;
         this.pos = [x-this.draggingX,y-this.draggingY];
     }
@@ -91,24 +61,63 @@ export class Element {
     }
 }
 
+class ElementInGrid extends Element {
+    constructor (gridPos, size, stage, layer, tileSize) {
+        super (
+            addArr(multArr(gridPos,[tileSize,tileSize]), stage.pos),
+            size,
+            stage,
+            layer
+        );
+        this.gridPos = gridPos;
+    }
+    get stageOffset() {
+        return multArr(this.gridPos,[this.tileSize,this.tileSize]) 
+    }
+    get pos () {
+        return addArr(this.stageOffset,this.stage.pos)
+    }
+    set pos (pos) {
+        if (!dragged) throw new Error("You cannot set position straightly when not dragged!");
+        this._pos = pos;
+    }
+    //#region : Position Components Getter
+    get stageOffsetX () {return this.stageOffset[0]}
+    get stageOffsetY () {return this.stageOffset[1]}
+    get gridPosX () {return this.gridPos[0]}
+    get gridPosY () {return this.gridPos[1]}
+    //#endregion
+    
+    getGridPosRelativeTo (element) {
+        return [
+            this.gridPosX-element.gridPosX,
+            this.gridPosX-element.gridPosX
+        ]
+    }
+    /*
+    setGridPosVariation(x,y) { // deprecated method
+        this.gridPosX+= x;
+        this.gridPosY+= y;
+        return;
+    }*/
+}
 
-export class Player extends Element {
-    constructor (spriteData,container) {
+export class Player extends ElementInGrid {
+    constructor (spriteData,stage) {
         super(
             spriteData["gridpos"], 
             [50,50],
-            container,
-            undefined
+            stage,
+            undefined,
+            stage.tileSize
         );
-        this.selected = undefined;
-        this.moving = false;
+        this.readyToMove = false;
     }
     toggleMoving () {
-        if (this.moving) {
-            this.moving = false; 
-        }    
-        else {
-            this.moving = true; 
+        if (this.readyToMove) {
+            this.readyToMove = false; 
+        } else {
+            this.readyToMove = true; 
         }
     }
     get selected () {
@@ -116,7 +125,7 @@ export class Player extends Element {
     }
     set selected (bool) {
         if (bool) this.toggleMoving();
-        else this.moving = false;
+        else this.readyToMove = false;
         this._selected = bool;
     }
     draw (ctx) {
@@ -126,7 +135,7 @@ export class Player extends Element {
     update (ctx) {
         this.draw(ctx);
         if (this.selected) {
-            if (this.moving) ctx.fillStyle = "cyan";
+            if (this.readyToMove) ctx.fillStyle = "cyan";
             else ctx.fillStyle = "blue";
             ctx.fillRect(this.posX, this.posY, 50, 50);
         } 
@@ -134,14 +143,18 @@ export class Player extends Element {
 }
 export class BackGround extends Element {
     tileDict = {0: "green",1: "black", 2: "yellow"};
-    constructor (gridsCtx,container) {
+    constructor (sceneData,stage) {
         super(
-            BACKGROUND_INITIAL_GRID_POS, 
-            [TILESIZE*GRIDSAMOUNT_X, TILESIZE*GRIDSAMOUNT_Y],
-            container,
+            stage.pos, 
+            [
+                stage.tileSize*stage.gridAmountX, 
+                stage.tileSize*stage.gridAmountX
+            ],
+            stage,
             undefined
         );
-        this.gridsCtx = gridsCtx;
+        this.gridsCtx = sceneData.grids;
+        this.tileDict = sceneData.tiledict;
     }
     draw (ctx) {
         let gridY = 0;
@@ -182,14 +195,18 @@ export class BackGround extends Element {
     }
 }
 export class Stage extends Element{
-    constructor (gridsData) {
+    constructor (sceneData, configs) {
         super(
-            BACKGROUND_INITIAL_GRID_POS, 
-            [TILESIZE*GRIDSAMOUNT_X, TILESIZE*GRIDSAMOUNT_Y],
+            configs.initPos, 
+            [
+                configs.tileSize*sceneData.grids.length, 
+                configs.tileSize*sceneData.grids[0].length, 
+            ],
             undefined,
             undefined
         );
-        this.background = new BackGround(gridsData, this);
+        this.tileSize = configs.tileSize;
+        this.background = new BackGround(sceneData, this);
         this.sprites = [];
         this.draggable = true;
     }
@@ -204,13 +221,9 @@ export class Stage extends Element{
         element.relativePosInStageY = r[1]
     }
     */
-    gridLocationOf (x,y) {
-        let pseudoElement = {
-            posX: x,
-            posY: y
-        }
+    gridLocationOf ([x,y]) {
         // console.log("pseudoElement:",pseudoElement);
-        let relPos = this.getPosRelativeTo(pseudoElement)
+        let relPos = this.getPosRelativeTo([x,y])
         // console.log("stage.pos:", [this.posX, this.posY])
         // console.log("relPos:" ,relPos)
         return [
@@ -219,23 +232,21 @@ export class Stage extends Element{
         ]
     }
     set posAll ([x,y]) {
-        let relPos = this.getPosRelativeTo({
-            posX: x, 
-            posY: y
-        }); //console.log([-relPos[0], -relPos[1]]," is the pos variation")
+        let relPos = this.getPosRelativeTo([x,y]); 
+        //console.log([-relPos[0], -relPos[1]]," is the pos variation")
         this.pos = [x,y];
         for (let element of this.elements) {
             if (element.dragged) continue;
-            element.posVariation = [-relPos[0], -relPos[1]]
+            element.setPosVariation(minusArr([0,0],relPos))
         }
     }
-    drag (x,y) {
+    drag ([x,y]) {
         if (!this.dragged) throw Error("The element isn't dragged!")
         //console.log("pos is set to", x-this.draggingX,",",y-this.draggingY)
         this.posAll = [x-this.draggingX,y-this.draggingY]
     }  
-    oneContaining (x,y) {
-        for (let e of this.elements) if (e.isContaining(x, y)) return e;
+    oneContaining ([x,y]) {
+        for (let e of this.elements) if (e.isContaining([x, y])) return e;
         return undefined;
     }
     isInBorder (comparator, theCompared=this.background) {
@@ -252,12 +263,18 @@ export class Stage extends Element{
         if (this.dragged) return this;
         return undefined;
     }
-    get movingOne () {
+    get oneReadyToMove () {
         for (let e of this.elements)
-            if (e.moving) return e;
+            if (e.readyToMove) return e;
         return undefined;
     }
     appendPlayerFrom (spriteData) {
         this.sprites.push(new Player(spriteData, this));
+    }
+    drawAll (ctx) {
+        for (let reversedIndex in this.elements) {
+            let element = this.elements[this.elements.length-reversedIndex-1];
+            element.update(ctx);
+        }
     }
 }
