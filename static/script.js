@@ -1,91 +1,36 @@
 const url = "http://localhost:80/";
 
- let data = { //default config
-    "grids": [
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    ],
-    "sprites": [
-        {
-            "gridpos": [2,3]
-        },
-        {
-            "gridpos": [5,5]
-        }
-    ],
-    "tiledict": [
-        "green",
-        "black",
-        "yellow",
-        "purple"
-    ]
-};
 
+let data, configs;
 $.ajaxSetup({async: false});
 
-let request = $.get(url+"/stage1");
-request.done(function(result){
+let request = $.get(url+"/stage1")
+.done(function(result){
     console.log("Received data:",result)
     data = result;
 })
-request.fail(function(jqXHR, textStatus, errorThrown) {
+.fail(function(jqXHR, textStatus, errorThrown) {
     console.log(jqXHR, textStatus, errorThrown)
-
+})
+let configRequest = $.get("/static/stages/configs.json")
+.done(function(result){
+    configs = result;
+})
+.fail(function(jqXHR, textStatus, errorThrown) {
+    console.log(jqXHR, textStatus, errorThrown);
 })
 
-
-
-const TILESIZE = 50;
 const CANVASWIDTH = 600;
 const CANVASHEIGHT = 600;
-const GRIDSAMOUNT_X = data["grids"].length;
-const GRIDSAMOUNT_Y = data["grids"][0].length;
-const BACKGROUND_INITIAL_GRID_POS = [-5,-5];
-const TILEDICT = data["tiledict"];
 let clientControllingSpriteIndex = 0;
 
 
-
-
-
-function deepCopyOf (arr) {
-    let newarr = [];
-    for (let item of arr) newarr.push(item)
-    return newarr
-}
-function itemPoped (arr, item) {
-    let others = deepCopyOf (arr);
-    let index = arr.indexOf(item);
-    if (index===-1) throw new Error("why isn't the item you're looking for there?")
-    others.splice(index,1);
-    return others
-}
-
-import {
-    Stage
-} from "/static/modules/frontend/spriteClasses.js";
+import { Stage } from "/static/modules/frontend/spriteClasses.js";
+import { itemPoped } from "./modules/frontend/functions.js";
 
 let stage = new Stage(data, configs);
 for (let spriteData of data["sprites"]) {
+    console.log(spriteData)
     stage.appendPlayerFrom(spriteData)
 }
 
@@ -100,17 +45,19 @@ $(function () {
 
     let isLastMouseEventDragging = false;
 
-    listener = () => {
+    function listener () {
         $(canvas).click(function(event){
-            e = stage.oneContaining([event.offsetX, event.offsetY])
+            let e = stage.oneContaining([event.offsetX, event.offsetY]);
+            let notCilcked;
             if (isLastMouseEventDragging) return;
             if (e) {
                 e.selected = true;
                 elementLastClicked = e;
                 notCilcked = itemPoped(stage.elements, e);
             }
-            else notCilcked = stage.elements;
-
+            else {
+                notCilcked = stage.elements;
+            }
             let oneReadyToMove = stage.oneReadyToMove;
             let eventGridLocation = stage.gridLocationOf([event.offsetX, event.offsetY]);
             if (e === stage.background && oneReadyToMove) {
@@ -119,7 +66,7 @@ $(function () {
                 // console.log("you are supposedly holding",eventGridLocation)
             }
             
-            for (element of notCilcked) element.selected = false
+            for (let element of notCilcked) element.selected = false
         })
     
         $(canvas).mousedown(function (event) {
@@ -140,7 +87,7 @@ $(function () {
 
         $(canvas).mouseup(function (event) {
             //1740. now doing: make it possible to only trigger log when mousedown is not on player
-            for (element of stage.elements){
+            for (let element of stage.elements){
                 element.release();
             }
             stage.release();
@@ -148,8 +95,8 @@ $(function () {
     }
     listener();
     
-    requsetPlayerMovement = function (index, location) {
-        console.log("requsetPlayerMovement")
+    function requsetPlayerMovement (index, location)  {
+        console.log("requsetPlayerMovement");
         if (index === clientControllingSpriteIndex) {
             socket.emit("move_request", {
                 "index": index,
@@ -158,7 +105,7 @@ $(function () {
         }
     }
 
-    dataUpdate = () => { // it is currently not working cause there's no "sprites" or "grids" emit.
+    function dataUpdate () { // it is currently not working cause there's no "sprites" or "grids" emit.
         socket.on("sprites", function (sprites) {
             stage.sprites[0].setRelativePos (stage, sprites); //[]
         });
@@ -178,15 +125,15 @@ $(function () {
     stage.drawAll(ctx);
 
     
-    animate = () => {
+    function animate () {
         window.requestAnimationFrame(animate);
         ctx.clearRect(0,0,canvas.width, canvas.height);
-        drawAll(stage.elements, ctx)
+        stage.drawAll(ctx)
         //console.log(spriteposition);
     }
     animate();
     
-    keyListener= () => {
+    function keyListener () {
         window.addEventListener('keypress', (event) => {
             if (event.key === 'c') 
                 stage.pos = [0,0]
