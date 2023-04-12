@@ -14,30 +14,35 @@ export class Element {
         this.dragging = [undefined,undefined];
         this.layer = layer; //尚未實裝
     }
-    get bottomRight () {return [this.posX+this.sizeX,this.posY+this.sizeY]}
+    
 
     //#region : Position Components Getter
     get posX () {return this.pos[0]}
     get posY () {return this.pos[1]}
+    get sizeX () {return this.size[0]}
+    get sizeY () {return this.size[1]}
     get draggingX() {return this.dragging[0]}
-    get draggingX() {return this.dragging[1]}
+    get draggingY() {return this.dragging[1]}
+    get bottomRight () {return addArr(this.pos,this.size)}
     get bottomRightX() {return this.bottomRight[0]}
     get bottomRightY() {return this.bottomRight[1]}
     //#endregion
     hold ([x,y]) {
         if (!this.draggable) throw new Error("This element is not draggable!")
-        this.draggingX = x-this.posX;
-        this.draggingY = y-this.posY;
+        this.dragging = minusArr([x,y], this.pos);
         this.dragged = true;
     }
     release () {
         if (!this.dragged) return;
-        this.draggingX = undefined;
-        this.draggingY = undefined;
+        this.dragging = [undefined,undefined]
         this.dragged = false;
     }
     isContaining ([x,y]) {
-        if (this.posX < x && x < this.posX+this.sizeX && this.posY < y && y < this.posY+this.sizeY){
+        console.log(this,".bottomRight:", this.bottomRight)
+        if (this.posX < x && 
+            x < this.bottomRightX && 
+            this.posY < y 
+            && y < this.bottomRightY){
             return true
         }
         return false
@@ -60,7 +65,6 @@ export class Element {
         throw new Error("wtf hell man u haven't implemented draw() yet!")
     }
 }
-
 class ElementInGrid extends Element {
     constructor (gridPos, size, stage, layer, tileSize) {
         super (
@@ -75,11 +79,12 @@ class ElementInGrid extends Element {
         return multArr(this.gridPos,[this.tileSize,this.tileSize]) 
     }
     get pos () {
+        console.log(this, "is getting pos, and shit", )
         return addArr(this.stageOffset,this.stage.pos)
     }
-    set pos (pos) {
-        if (!dragged) throw new Error("You cannot set position straightly when not dragged!");
-        this._pos = pos;
+    set pos (_pos) {
+        //if (!this.dragged) throw new Error("You cannot set position straightly when not dragged!");
+        this._pos = _pos;
     }
     //#region : Position Components Getter
     get stageOffsetX () {return this.stageOffset[0]}
@@ -101,15 +106,16 @@ class ElementInGrid extends Element {
         return;
     }*/
 }
-
 export class Player extends ElementInGrid {
     constructor (spriteData,stage) {
         super(
             spriteData["gridpos"], 
-            [50,50],
+            [stage.configs.tileSize,
+                stage.configs.tileSize
+            ],
             stage,
             undefined,
-            stage.tileSize
+            stage.configs.tileSize
         );
         this.readyToMove = false;
     }
@@ -146,10 +152,7 @@ export class BackGround extends Element {
     constructor (sceneData,stage) {
         super(
             stage.pos, 
-            [
-                stage.tileSize*stage.gridAmountX, 
-                stage.tileSize*stage.gridAmountX
-            ],
+            stage.size,
             stage,
             undefined
         );
@@ -157,6 +160,7 @@ export class BackGround extends Element {
         this.tileDict = sceneData.tiledict;
     }
     draw (ctx) {
+        const TILESIZE = this.stage.configs.tileSize;
         let gridY = 0;
         for (let grid_line of this.gridsCtx) {
             let gridX = 0;
@@ -205,7 +209,7 @@ export class Stage extends Element{
             undefined,
             undefined
         );
-        this.tileSize = configs.tileSize;
+        this.configs = configs;
         this.background = new BackGround(sceneData, this);
         this.sprites = [];
         this.draggable = true;
@@ -227,8 +231,8 @@ export class Stage extends Element{
         // console.log("stage.pos:", [this.posX, this.posY])
         // console.log("relPos:" ,relPos)
         return [
-            parseInt(-relPos[0]/TILESIZE), 
-            parseInt(-relPos[1]/TILESIZE)
+            parseInt(-relPos[0]/this.configs.tileSize), 
+            parseInt(-relPos[1]/this.configs.tileSize)
         ]
     }
     set posAll ([x,y]) {
@@ -246,6 +250,7 @@ export class Stage extends Element{
         this.posAll = [x-this.draggingX,y-this.draggingY]
     }  
     oneContaining ([x,y]) {
+        //console.log("isbgcontaining:",this.background.isContaining([x,y]))
         for (let e of this.elements) if (e.isContaining([x, y])) return e;
         return undefined;
     }
