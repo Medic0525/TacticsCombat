@@ -37,8 +37,6 @@ class User:
 
     def login(self, account_mail, password):
         log_password = con.execute(F"SELECT password FROM user WHERE account_mail='{account_mail}'").fetchone()
-        print(log_password[0])
-        print(int(hash(password)))
         if log_password is not None and int(hash(password)) == log_password[0]:
             return True
         else:
