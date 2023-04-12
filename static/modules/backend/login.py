@@ -6,7 +6,7 @@ Random = random.SystemRandom()
 con = sqlite3.connect("static\database\combat.db")
 cur = con.cursor()
 
-cur.execute("CREATE TABLE IF NOT EXISTS user(user_id INT, profile_name VARCHAR, username VARCHAR, profile_picture VARCHAR, nickname VARCHAR(20), password VARCHAR, account_mail VARCHAR)")
+cur.execute("CREATE TABLE IF NOT EXISTS user(user_id INT, profile_name VARCHAR, username VARCHAR, profile_picture VARCHAR, nickname VARCHAR(20), password INT, account_mail VARCHAR)")
 
 with open("static\database\settings.json") as j:
     file = json.load(j)
@@ -39,7 +39,7 @@ class User:
         log_password = con.execute(F"SELECT password FROM user WHERE account_mail='{account_mail}'").fetchone()
         print(log_password[0])
         print(int(hash(password)))
-        if log_password is not None and int(hash(password)) is log_password[0]:
+        if log_password is not None and int(hash(password)) == log_password[0]:
             return True
         else:
             return False
@@ -54,7 +54,7 @@ def main():
     username = input("input email")
     password = input("input password")
     print(testing_user.login(username, password))
-    cur.execute("DELETE FROM user WHERE profile_name='Medic0525'")
+    con.execute("DELETE FROM user WHERE profile_name='Medic0525'")
     con.commit()
     print("register system testing")
 
