@@ -3,12 +3,12 @@ import sqlite3
 import json
 
 Random = random.SystemRandom()
-con = sqlite3.connect("combat.db")
+con = sqlite3.connect("static\database\combat.db")
 cur = con.cursor()
 
 cur.execute("CREATE TABLE IF NOT EXISTS user(user_id INT, profile_name VARCHAR, username VARCHAR, profile_picture VARCHAR, nickname VARCHAR(20), password VARCHAR, account_mail VARCHAR)")
 
-with open("settings.json") as j:
+with open("static\database\settings.json") as j:
     file = json.load(j)
 
 
@@ -23,9 +23,9 @@ class User:
 
         self.nickname = nickname if nickname != None else username
 
-        self.userid = str(file["id"]).zfill(9)
+        self.userid = str(file["player_count"]).zfill(9)
         self.userid = int(self.userid)
-        file["id"] += 1
+        file["player_count"] += 1
         json.dumps(file)
 
         self.password = hash(password)
